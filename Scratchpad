@@ -1,0 +1,289 @@
+import org.codehaus.groovy.transform.powerassert.SourceText;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+enum Steps {
+    move1ThingUp, move1ThingDown, move2ThignsUp, move2ThingsDown;
+
+}
+
+class Lol {
+
+    List<Floor> floors = new ArrayList<>();
+    Floor floor1 = new Floor(0);
+    Floor floor2 = new Floor(1);
+    Floor floor3 = new Floor(2);
+    Floor floor4 = new Floor(3);
+    Set<State> usedStates = new HashSet<>();
+
+
+    public static void main(String[] args) {
+        Lol lol = new Lol();
+        lol.init();
+        int answer = lol.solveIt(0, new State(0,lol.floors), 14);
+        System.out.println("ANSWERRRRR");
+        System.out.println(answer);
+    }
+
+    private void init() {
+        floors.add(floor1);
+        floors.add(floor2);
+        floors.add(floor3);
+        floors.add(floor4);
+        floor1.addStuff(new Chip("a"));
+        floor1.addStuff(new Chip("b"));
+        floor2.addStuff(new Gen("a"));
+        floor3.addStuff(new Gen("b"));
+//        floor1.addStuff(new Chip("a"));
+//        floor1.addStuff(new Gen("a"));
+//        floor2.addStuff(new Gen("b"));
+//        floor2.addStuff(new Gen("c"));
+//        floor2.addStuff(new Gen("d"));
+//        floor2.addStuff(new Gen("e"));
+//        floor3.addStuff(new Chip("b"));
+//        floor3.addStuff(new Chip("c"));
+//        floor3.addStuff(new Chip("d"));
+//        floor3.addStuff(new Chip("e"));
+    }
+
+    //numer kroku na zakończenie
+    private int solveIt(int counter, State state, int bestAnswer) {
+        if (state.isSolved())
+            return counter;
+        if (usedStates.contains(state)){
+            return bestAnswer;
+        }
+        else if (counter > bestAnswer){
+            return bestAnswer;
+        }
+        else{
+            int bestHuh=bestAnswer;
+            for (State s : state.tryStep()) {
+                int huh = solveIt(counter+1,s,bestAnswer);
+                usedStates.add(state);
+                if(huh < bestHuh){
+                    bestHuh = huh;
+                }
+            }
+            return bestHuh;
+        }
+    }
+}
+
+class State {
+    int currentFloor;
+    List<Floor> floors;
+
+    public State(int currentFloor, List<Floor> floors) {
+        this.currentFloor = currentFloor;
+        this.floors = floors;
+    }
+
+    public boolean isSolved(){
+        return floors.get(0).stuffList.isEmpty() &&
+                floors.get(1).stuffList.isEmpty() &&
+                floors.get(2).stuffList.isEmpty();
+    }
+
+    public List<State> tryStep() {
+        List<State> states = new ArrayList<>();
+        Floor current = floors.get(currentFloor);
+        for (Steps step : Steps.values()) {
+            switch (step) {
+                case move1ThingDown:
+                    if (currentFloor >= 1) {
+                        for (Stuff stuff : current.stuffList) {
+                            List<Floor> newFloors = new ArrayList<>();
+                            for(Floor f : floors){
+                                newFloors.add( new Floor(f.number, new HashSet<>(f.stuffList)));
+                            }
+                            newFloors.get(currentFloor).stuffList.remove(stuff);
+                            newFloors.get(currentFloor - 1).stuffList.add(stuff);
+                            if (valid(newFloors))
+                                states.add(new State(currentFloor - 1, newFloors));
+                        }
+                    }
+                    break;
+                case move1ThingUp:
+                    if (currentFloor <= 2) {
+                        for (Stuff stuff : current.stuffList) {
+                            List<Floor> newFloors = new ArrayList<>();
+                            for(Floor f : floors){
+                                newFloors.add( new Floor(f.number, new HashSet<>(f.stuffList)));
+                            }
+                            newFloors.get(currentFloor).stuffList.remove(stuff);
+                            newFloors.get(currentFloor + 1).stuffList.add(stuff);
+                            if (valid(newFloors))
+                                states.add(new State(currentFloor + 1, newFloors));
+                        }
+                    }
+                    break;
+                case move2ThignsUp:
+                    if (currentFloor <= 2) {
+                        for (Stuff stuff : current.stuffList) {
+                            for (Stuff stuff2 : current.stuffList) {
+                                if (!stuff.equals(stuff2)) {
+                                    if (stuff.getClass().equals(stuff2.getClass()) || stuff.isSameStuff(stuff2)) {
+                                        List<Floor> newFloors = new ArrayList<>();
+                                        for(Floor f : floors){
+                                            newFloors.add( new Floor(f.number, new HashSet<>(f.stuffList)));
+                                        }
+                                        newFloors.get(currentFloor).stuffList.remove(stuff);
+                                        newFloors.get(currentFloor).stuffList.remove(stuff2);
+                                        newFloors.get(currentFloor + 1).stuffList.add(stuff);
+                                        newFloors.get(currentFloor + 1).stuffList.add(stuff2);
+                                        if (valid(newFloors))
+                                            states.add(new State(currentFloor + 1, newFloors));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case move2ThingsDown:
+                    if (currentFloor >= 1) {
+                        for (Stuff stuff : current.stuffList) {
+                            for (Stuff stuff2 : current.stuffList) {
+                                if (!stuff.equals(stuff2)) {
+                                    if (stuff.getClass().equals(stuff2.getClass()) || stuff.isSameStuff(stuff2)) {
+                                        List<Floor> newFloors = new ArrayList<>();
+                                        for(Floor f : floors){
+                                            newFloors.add( new Floor(f.number, new HashSet<>(f.stuffList)));
+                                        }
+                                        newFloors.get(currentFloor).stuffList.remove(stuff);
+                                        newFloors.get(currentFloor).stuffList.remove(stuff2);
+                                        newFloors.get(currentFloor - 1).stuffList.add(stuff);
+                                        newFloors.get(currentFloor - 1).stuffList.add(stuff2);
+                                        if (valid(newFloors))
+                                            states.add(new State(currentFloor - 1, newFloors));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+        return states;
+    }
+
+    public boolean valid(List<Floor> floors) {
+        for (Floor f : floors) {
+            if (!f.isValid()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        State state = (State) o;
+
+        if (currentFloor != state.currentFloor) return false;
+        if (floors != null ? !floors.equals(state.floors) : state.floors != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = currentFloor;
+        result = 31 * result + (floors != null ? floors.hashCode() : 0);
+        return result;
+    }
+}
+
+class Floor implements Cloneable {
+    final int number;
+    Set<Stuff> stuffList;
+
+    public Floor(int number) {
+        this.number = number;
+        stuffList = new HashSet<>();
+    }
+
+    public Floor(int number, Set<Stuff> stuffList) {
+        this.number = number;
+        this.stuffList = stuffList;
+    }
+
+    public void addStuff(Stuff stuff) {
+        stuffList.add(stuff);
+    }
+
+    public boolean isValid() {
+        for (Stuff s : stuffList) {
+            if (s instanceof Chip) {
+                boolean sameExists = false;
+                boolean generatorsHere = false;
+                for (Stuff gen : stuffList) {
+                    if (gen instanceof Gen) {
+                        generatorsHere = true;
+                        if (s.isSameStuff(gen)) {
+                            sameExists = true;
+                            break;
+                        }
+                    }
+                }
+                if (!sameExists && generatorsHere) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Floor floor = (Floor) o;
+
+        if (number != floor.number) return false;
+        if (stuffList != null ? !stuffList.equals(floor.stuffList) : floor.stuffList != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = number;
+        result = 31 * result + (stuffList != null ? stuffList.hashCode() : 0);
+        return result;
+    }
+}
+
+class Stuff {
+    String name;
+
+    public Stuff(String name) {
+        this.name = name;
+    }
+
+    public boolean isSameStuff(Stuff stuff) {
+        return stuff.name.equals(name);
+    }
+}
+
+class Chip extends Stuff {
+    public Chip(String name) {
+        super(name);
+    }
+}
+
+class Gen extends Stuff {
+    public Gen(String name) {
+        super(name);
+    }
+
+
+}
+
